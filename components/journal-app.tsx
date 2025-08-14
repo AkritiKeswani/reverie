@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -12,9 +12,17 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Brain, Plus, Calendar, Lightbulb } from "lucide-react";
+import { BookOpen, Brain, Plus, Calendar, Lightbulb, Mic } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import QuizComponent from "@/components/quiz-component";
+
+interface JournalEntry {
+  id: number;
+  date: Date;
+  content: string;
+  mood: string;
+}
+
 
 const journalPrompts = [
   "What made you smile today?",
@@ -108,20 +116,43 @@ export default function JournalApp() {
   const [selectedPrompt, setSelectedPrompt] = useState("");
   const [activeQuiz, setActiveQuiz] = useState<number | null>(null);
   const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
+  const [recentEntries, setRecentEntries] = useState<JournalEntry[]>([]);
+
+  // Simple local save function - no backend needed
 
   const handlePromptSelect = (prompt: string) => {
+    console.log('Prompt selected:', prompt); // Debug log
     setSelectedPrompt(prompt);
     setCurrentEntry(prompt + "\n\n");
+    console.log('Current entry set to:', prompt + "\n\n"); // Debug log
   };
 
   const handleSaveEntry = () => {
-    // TODO: Implement save functionality with Supabase
-    console.log("Saving entry:", currentEntry);
+    if (!currentEntry.trim()) {
+      console.log("No content to save");
+      return;
+    }
+
+    // Create a new entry with local data
+    const newEntry = {
+      id: Date.now(), // Use timestamp as ID
+      date: new Date(), // Use actual Date object
+      content: currentEntry,
+      mood: selectedPrompt ? "Prompted" : "Free write"
+    };
+
+    // Add to recent entries
+    setRecentEntries(prev => [newEntry, ...prev.slice(0, 9)]); // Keep max 10 entries
+    
+    // Clear the form
     setCurrentEntry("");
     setSelectedPrompt("");
+    
+    console.log("Entry saved locally:", newEntry);
   };
 
   const handleStartQuiz = (quizId: number) => {
+    console.log('Starting quiz with ID:', quizId);
     setActiveQuiz(quizId);
   };
 
@@ -179,11 +210,29 @@ export default function JournalApp() {
                     <CardTitle className="flex items-center gap-2">
                       <Plus className="w-5 h-5" />
                       New Entry
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="ml-auto px-3 py-2 h-8 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 hover:text-blue-800 transition-colors"
+                        onClick={() => {
+                          // Placeholder for voice recording
+                          console.log('Voice recording clicked');
+                        }}
+                        title="Click to record voice note - it will automatically appear in your journal entry"
+                      >
+                        <Mic className="h-4 w-4 mr-1" />
+                        Record
+                      </Button>
                     </CardTitle>
                     <CardDescription>
                       {selectedPrompt
                         ? "Writing from prompt"
                         : "What's on your mind today?"}
+                      {selectedPrompt && (
+                        <div className="mt-2 text-xs text-gray-500">
+                          Debug: Selected prompt: "{selectedPrompt}"
+                        </div>
+                      )}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -204,9 +253,12 @@ export default function JournalApp() {
                       className="min-h-[300px] resize-none"
                     />
                     <div className="flex justify-between items-center">
-                      <p className="text-sm text-gray-500">
-                        {currentEntry.length} characters
-                      </p>
+                      <div className="text-sm text-gray-500">
+                        <p>{currentEntry.length} characters</p>
+                        {currentEntry && (
+                          <p className="text-xs">Debug: Entry starts with: "{currentEntry.substring(0, 50)}..."</p>
+                        )}
+                      </div>
                       <Button
                         onClick={handleSaveEntry}
                         disabled={!currentEntry.trim()}
@@ -232,20 +284,24 @@ export default function JournalApp() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="h-[200px]">
-                      <div className="space-y-2">
-                        {journalPrompts.map((prompt, index) => (
-                          <Button
-                            key={index}
-                            variant="ghost"
-                            className="w-full text-left h-auto p-3 justify-start"
-                            onClick={() => handlePromptSelect(prompt)}
-                          >
-                            <span className="text-sm">{prompt}</span>
-                          </Button>
-                        ))}
-                      </div>
-                    </ScrollArea>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      {journalPrompts.map((prompt, index) => (
+                        <div
+                          key={index}
+                          className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                            selectedPrompt === prompt 
+                              ? "bg-blue-100 text-blue-900 border-blue-300" 
+                              : "bg-white hover:bg-gray-50 border-gray-200"
+                          }`}
+                          onClick={() => {
+                            console.log('Prompt clicked:', prompt);
+                            handlePromptSelect(prompt);
+                          }}
+                        >
+                          <p className="text-sm leading-relaxed break-words">{prompt}</p>
+                        </div>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -258,26 +314,38 @@ export default function JournalApp() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      {recentEntries.map((entry) => (
-                        <div
-                          key={entry.id}
-                          className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                        >
-                          <div className="flex justify-between items-start mb-1">
-                            <span className="text-sm font-medium">
-                              {entry.date}
-                            </span>
-                            <Badge variant="secondary" className="text-xs">
-                              {entry.mood}
-                            </Badge>
+                    {recentEntries.length > 0 ? (
+                      <div className="space-y-3">
+                        {recentEntries.map((entry) => (
+                          <div
+                            key={entry.id}
+                            className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                          >
+                            <div className="flex justify-between items-start mb-1">
+                              <span className="text-sm font-medium">
+                                {entry.date instanceof Date 
+                                  ? entry.date.toLocaleDateString() 
+                                  : new Date(entry.date).toLocaleDateString()
+                                }
+                              </span>
+                              <Badge variant="secondary" className="text-xs">
+                                {entry.mood}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-600 truncate">
+                              {entry.content.length > 100 
+                                ? entry.content.substring(0, 100) + '...' 
+                                : entry.content
+                              }
+                            </p>
                           </div>
-                          <p className="text-sm text-gray-600 truncate">
-                            {entry.preview}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 text-gray-500">
+                        <p>No entries yet. Start writing to see them here!</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -293,9 +361,12 @@ export default function JournalApp() {
                 Explore different aspects of your personality and gain deeper
                 self-understanding
               </p>
+              <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
+                Debug: {personalityQuizzes.length} quizzes available
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {personalityQuizzes.map((quiz) => (
                 <Card
                   key={quiz.id}
