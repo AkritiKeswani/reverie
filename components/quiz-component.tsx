@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, CircleCheck } from "lucide-react";
+import { SoftIcon } from "@/components/soft-icon";
 
 interface QuizOption {
   id: number;
@@ -119,10 +120,7 @@ export default function QuizComponent({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          answers,
-          userId: "anonymous", // You'd get this from auth
-        }),
+        body: JSON.stringify({ answers }),
       });
 
       const data = await response.json();
@@ -165,7 +163,7 @@ export default function QuizComponent({
     return (
       <Card>
         <CardHeader className="text-center">
-          <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+          <SoftIcon icon={CircleCheck} size="lg" className="mx-auto mb-4" />
           <CardTitle className="text-2xl">{result.type}</CardTitle>
           <CardDescription className="text-base">
             {result.summary}
@@ -178,7 +176,7 @@ export default function QuizComponent({
               {result.traits.map((trait, index) => (
                 <span
                   key={index}
-                  className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                  className="px-3 py-1 bg-sky-100 text-sky-800 rounded-full text-sm"
                 >
                   {trait}
                 </span>
@@ -192,7 +190,7 @@ export default function QuizComponent({
               <ul className="space-y-2">
                 {result.insights.map((insight, index) => (
                   <li key={index} className="flex items-start gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                    <span className="w-2 h-2 bg-sky-400 rounded-full mt-2 flex-shrink-0"></span>
                     <span className="text-sm">{insight}</span>
                   </li>
                 ))}
@@ -205,7 +203,7 @@ export default function QuizComponent({
             <ul className="space-y-2">
               {result.recommendations.map((rec, index) => (
                 <li key={index} className="flex items-start gap-2">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
+                  <span className="w-2 h-2 bg-blue-300 rounded-full mt-2 flex-shrink-0"></span>
                   <span className="text-sm">{rec}</span>
                 </li>
               ))}
@@ -230,7 +228,7 @@ export default function QuizComponent({
       <CardHeader>
         <div className="flex items-center justify-between mb-4">
           <Button variant="ghost" onClick={onBack}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4 mr-2" strokeWidth={1.75} />
             Back
           </Button>
           <span className="text-sm text-gray-500">
@@ -245,7 +243,7 @@ export default function QuizComponent({
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-semibold text-sky-900">
             {currentQ.question_text}
           </h2>
         </div>
@@ -264,7 +262,7 @@ export default function QuizComponent({
           {currentQ.options.map((option) => (
             <div
               key={option.id}
-              className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center space-x-2 p-4 border rounded-2xl hover:bg-sky-50 transition-colors"
             >
               <RadioGroupItem
                 value={option.score_value.toString()}
@@ -286,7 +284,7 @@ export default function QuizComponent({
             onClick={handlePrevious}
             disabled={currentQuestion === 0}
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4 mr-2" strokeWidth={1.75} />
             Previous
           </Button>
 
@@ -297,7 +295,7 @@ export default function QuizComponent({
           ) : (
             <Button onClick={handleNext} disabled={!canProceed}>
               Next
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight className="w-4 h-4 ml-2" strokeWidth={1.75} />
             </Button>
           )}
         </div>
@@ -318,11 +316,11 @@ export default function QuizComponent({
               return (
                 <div
                   key={index}
-                  className="flex-shrink-0 w-24 p-3 border rounded-lg bg-white relative"
+                  className="flex-shrink-0 w-24 p-3 border rounded-2xl bg-white relative"
                 >
                   <div className="flex items-center justify-center mb-2">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold`}
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold`}
                       style={{
                         backgroundColor:
                           dimension.color === "blue"
@@ -352,10 +350,10 @@ export default function QuizComponent({
                     {[1, 2, 3, 4, 5].map((segment) => (
                       <div
                         key={segment}
-                        className={`w-1 h-2 rounded ${
+                        className={`w-1 h-2 rounded-full ${
                           segment <= progressForDimension / 20
-                            ? "bg-gray-400"
-                            : "bg-gray-200"
+                            ? "bg-sky-400"
+                            : "bg-sky-100"
                         }`}
                       />
                     ))}

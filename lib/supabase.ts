@@ -15,10 +15,14 @@ export interface JournalEntry {
   id: string
   user_id: string
   content: string
-  prompt_used?: string
+  prompt_used: string | null
+  mood: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface CreateJournalEntry {
   content: string
   prompt_used?: string
+  mood?: string
 }

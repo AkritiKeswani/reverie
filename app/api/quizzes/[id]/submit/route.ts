@@ -1,15 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-// Uncomment when you're ready to connect to Supabase:
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { auth } from "@clerk/nextjs/server";
+import { supabaseAdmin } from "@/lib/supabase-server";
 
 interface QuizSubmission {
   answers: Record<string, number>;
-  userId?: string;
 }
 
 interface PersonalityDimension {
@@ -23,21 +17,24 @@ interface PersonalityDimension {
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const quizId = Number.parseInt(params.id);
+    const { id } = await params;
+    const quizId = Number.parseInt(id);
     const body: QuizSubmission = await request.json();
+    // Signed-out demo users are saved as "anonymous"
+    const { userId } = await auth();
 
     // Calculate personality dimensions based on answers
     const dimensions = calculatePersonalityDimensions(body.answers, quizId);
     const result = generatePersonalityProfile(dimensions, quizId);
 
     // Save to Supabase when ready
-    const { data: savedResult, error } = await supabase
+    const { data: savedResult, error } = await supabaseAdmin
       .from("user_quiz_results")
       .insert({
-        user_id: body.userId || "anonymous",
+        user_id: userId ?? "anonymous",
         quiz_id: quizId,
         answers: body.answers,
         dimensions: dimensions,

@@ -1,57 +1,43 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuthContext } from '@/components/auth-provider';
+import { SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
+import { useAuth } from '@/hooks/use-clerk-auth';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Brain, Sparkles, ArrowRight, Play } from 'lucide-react';
+import { BookHeart, Sparkles, Lightbulb, ArrowRight, Play } from 'lucide-react';
 import JournalApp from '@/components/journal-app';
-import { UserProfile } from '@/components/user-profile';
+import { SoftIcon } from '@/components/soft-icon';
+
+const pageBg = 'min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50';
 
 export default function HomePage() {
-  const [mode, setMode] = useState<'landing' | 'preview' | 'app'>('landing');
-  const { user, signInWithGoogle, logout, loading } = useAuthContext();
-  
-  // Debug logging
-  console.log('HomePage render:', { user: !!user, mode, loading });
+  const [previewing, setPreviewing] = useState(false);
+  const { user, loading } = useAuth();
 
-  const handlePreview = () => {
-    setMode('preview');
-  };
-
-  const handleSignIn = async () => {
-    console.log('Starting Google sign in...');
-    const result = await signInWithGoogle();
-    console.log('Sign in result:', result);
-    
-    if (result.success) {
-      console.log('Sign in successful, setting mode to app');
-      setMode('app');
-    } else if (result.error === 'Firebase: Error (auth/popup-closed-by-user)') {
-      console.log('User closed the sign-in popup');
-      // Don't show this as an error - it's just user canceling
-    } else {
-      console.error('Sign in failed:', result.error);
-    }
-  };
-
-  const handleSignOut = async () => {
-    await logout();
-    setMode('landing');
-  };
-
-  // If user is signed in and we're not in landing mode, show the full app
-  if (user && mode !== 'landing' && !loading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className={`${pageBg} flex items-center justify-center`}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto mb-4"></div>
+          <p className="text-slate-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Signed in: show the full app
+  if (user) {
+    return (
+      <div className={pageBg}>
         <div className="container mx-auto px-4 py-6">
           <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center space-x-3">
-              <BookOpen className="h-8 w-8 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900">Reverie</h1>
+            <div className="flex items-center gap-3">
+              <SoftIcon icon={BookHeart} />
+              <span className="text-xl font-semibold text-sky-900">Reverie</span>
             </div>
-            <UserProfile />
+            <UserButton />
           </div>
           <JournalApp />
         </div>
@@ -59,42 +45,32 @@ export default function HomePage() {
     );
   }
 
-  // If in preview mode, show the app with a preview banner
-  if (mode === 'preview' && !loading) {
+  // Signed out, trying the demo
+  if (previewing) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className={pageBg}>
         <div className="container mx-auto px-4 py-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Play className="h-5 w-5 text-blue-600" />
-                <span className="text-blue-800 font-medium">Preview Mode</span>
-                <Badge variant="outline" className="text-blue-700">Demo</Badge>
+          <div className="bg-white/80 border border-sky-100 rounded-3xl p-4 mb-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+              <div className="flex items-center gap-2">
+                <SoftIcon icon={Play} size="sm" />
+                <span className="text-sky-800 font-medium">Preview Mode</span>
+                <Badge variant="secondary">Demo</Badge>
               </div>
-              <div className="flex space-x-3">
-                <Button variant="outline" onClick={() => setMode('landing')}>
-                  Back to Landing
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setPreviewing(false)}>
+                  Back
                 </Button>
-                <Button onClick={handleSignIn} className="bg-blue-600 hover:bg-blue-700">
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Sign in to Save
-                </Button>
+                <SignInButton mode="modal">
+                  <Button>
+                    <Sparkles className="h-4 w-4 mr-2" strokeWidth={1.75} />
+                    Sign in to Save
+                  </Button>
+                </SignInButton>
               </div>
             </div>
           </div>
           <JournalApp />
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading only when actively authenticating (not during demo)
-  if (loading && user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Signing you in...</p>
         </div>
       </div>
     );
@@ -102,69 +78,65 @@ export default function HomePage() {
 
   // Landing page
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className={pageBg}>
       <div className="container mx-auto px-4 py-16">
         {/* Hero Section */}
         <div className="text-center mb-16">
           <div className="flex justify-center mb-6">
-            <div className="p-4 bg-blue-100 rounded-full">
-              <BookOpen className="h-16 w-16 text-blue-600" />
-            </div>
+            <SoftIcon icon={BookHeart} size="lg" />
           </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Welcome to <span className="text-blue-600">Reverie</span>
+          <h1 className="text-5xl font-semibold tracking-tight text-sky-900 mb-6">
+            Welcome to <span className="text-sky-500">Reverie</span>
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Your peaceful space for reflection and self-discovery. Journal your thoughts, 
+          <p className="text-xl text-slate-500 mb-8 max-w-2xl mx-auto">
+            Your peaceful space for reflection and self-discovery. Journal your thoughts,
             track your growth, and explore your inner world.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
-              onClick={handlePreview}
-              className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-6"
+            <SignUpButton mode="modal">
+              <Button size="lg" className="text-lg px-8 py-6">
+                <Sparkles className="h-5 w-5 mr-2" strokeWidth={1.75} />
+                Get Started
+              </Button>
+            </SignUpButton>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setPreviewing(true)}
+              className="text-lg px-8 py-6"
             >
-              <Play className="h-5 w-5 mr-2" />
+              <Play className="h-5 w-5 mr-2" strokeWidth={1.75} />
               Try Demo
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              onClick={handleSignIn}
-              className="text-lg px-8 py-6 border-2"
-            >
-              <Sparkles className="h-5 w-5 mr-2" />
-              Sign in with Google
-            </Button>
           </div>
+          <p className="mt-4 text-sm text-slate-500">
+            Already have an account?{' '}
+            <SignInButton mode="modal">
+              <button className="text-sky-600 font-medium hover:underline">Sign in</button>
+            </SignInButton>
+          </p>
         </div>
 
         {/* Features Section */}
         <div className="grid md:grid-cols-3 gap-8 mb-16">
           <Card className="text-center p-6">
-            <div className="p-3 bg-blue-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <BookOpen className="h-8 w-8 text-blue-600" />
-            </div>
+            <SoftIcon icon={BookHeart} size="lg" className="mx-auto mb-4" />
             <CardTitle className="mb-2">Personal Journaling</CardTitle>
             <CardDescription>
               Write freely in your private space. No judgment, just pure reflection.
             </CardDescription>
           </Card>
-          
+
           <Card className="text-center p-6">
-            <div className="p-3 bg-green-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <Brain className="h-8 w-8 text-green-600" />
-            </div>
+            <SoftIcon icon={Lightbulb} size="lg" className="mx-auto mb-4" />
             <CardTitle className="mb-2">Self-Discovery</CardTitle>
             <CardDescription>
               Track patterns, insights, and growth over time with intelligent analysis.
             </CardDescription>
           </Card>
-          
+
           <Card className="text-center p-6">
-            <div className="p-3 bg-purple-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <Sparkles className="h-8 w-8 text-purple-600" />
-            </div>
+            <SoftIcon icon={Sparkles} size="lg" className="mx-auto mb-4" />
             <CardTitle className="mb-2">Smart Insights</CardTitle>
             <CardDescription>
               Get personalized insights and prompts to deepen your self-reflection.
@@ -174,29 +146,22 @@ export default function HomePage() {
 
         {/* CTA Section */}
         <div className="text-center">
-          <Card className="max-w-2xl mx-auto p-8 bg-gradient-to-r from-blue-50 to-purple-50 border-0">
+          <Card className="max-w-2xl mx-auto p-8 bg-gradient-to-br from-sky-50 to-white">
             <CardTitle className="text-2xl mb-4">Ready to start your journey?</CardTitle>
             <CardDescription className="text-lg mb-6">
-              Choose to explore the demo or sign in to start saving your reflections and insights.
+              Explore the demo or create an account to start saving your reflections and insights.
             </CardDescription>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                variant="outline" 
-                size="lg" 
-                onClick={handlePreview}
-                className="border-2"
-              >
+              <Button variant="outline" size="lg" onClick={() => setPreviewing(true)}>
                 Explore Demo
-                <ArrowRight className="h-4 w-4 ml-2" />
+                <ArrowRight className="h-4 w-4 ml-2" strokeWidth={1.75} />
               </Button>
-              <Button 
-                size="lg" 
-                onClick={handleSignIn}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Get Started
-              </Button>
+              <SignUpButton mode="modal">
+                <Button size="lg">
+                  <Sparkles className="h-4 w-4 mr-2" strokeWidth={1.75} />
+                  Get Started
+                </Button>
+              </SignUpButton>
             </div>
           </Card>
         </div>

@@ -347,10 +347,11 @@ const mockQuizData = {
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const quizId = Number.parseInt(params.id);
+    const { id } = await params;
+    const quizId = Number.parseInt(id);
 
     // TODO: Replace with Supabase query when ready
     // const { data: quiz, error } = await supabase
